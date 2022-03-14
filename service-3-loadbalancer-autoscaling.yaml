@@ -1,0 +1,60 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: my-web-deployment-autoscaling
+  labels:
+    app : my-k8s-deployment
+spec:
+  selector:
+    matchLabels:
+      project: containersanada
+  template:
+    metadata:
+      labels:
+        project: canada   # Service will look for those PODS Labels!!!
+    spec:
+      containers:
+        - name : canada-web
+          image: bobos77/k8sdocker:latest
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v2beta1v1
+    kind: Deployment
+    name: my-web-deployment-autoscaling
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-autoscaling-pod-service
+  labels:
+     env  : prod
+     owner: TonyPush
+spec:
+  selector:
+    project: Canada      # Selecting PODs with those Labels
+  ports:
+    - name      : app-listener
+      protocol  : TCP
+      port      : 80  # Port on Load Balancer
+      targetPort: 80  # Port on Pod
+  type: LoadBalancer
